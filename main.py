@@ -16,20 +16,12 @@ async def webhook(request: Request):
             return {
                 "version": "1.0",
                 "response": {
-                    "text": "Привет! Я DeepSeek. Скажи что-нибудь!",
+                    "text": "Скажи что-нибудь!",
                     "end_session": False
                 }
             }
         
-        if not DEEPSEEK_API_KEY:
-            return {
-                "version": "1.0",
-                "response": {
-                    "text": "Ошибка: API ключ не настроен. Добавь DEEPSEEK_API_KEY в переменные окружения на Render.",
-                    "end_session": True
-                }
-            }
-        
+        # Максимально быстрый запрос к DeepSeek
         response = requests.post(
             "https://api.deepseek.com/v1/chat/completions",
             headers={
@@ -39,27 +31,22 @@ async def webhook(request: Request):
             json={
                 "model": "deepseek-chat",
                 "messages": [{"role": "user", "content": user_text}],
-                "max_tokens": 100
+                "max_tokens": 50,      # Очень короткий ответ
+                "temperature": 0.5     # Меньше креатива = быстрее
             },
-            timeout=3.0
+            timeout=2.5  # Жёсткий таймаут!
         )
         
-        # Проверяем, что ответ успешный
         if response.status_code == 200:
             data = response.json()
-            # Проверяем, что есть поле choices (оно есть только при успехе)
-            if "choices" in data and len(data["choices"]) > 0:
-                answer = data["choices"][0]["message"]["content"]
-            else:
-                answer = f"Странный ответ от DeepSeek: {data}"
+            answer = data["choices"][0]["message"]["content"]
         else:
-            # DeepSeek вернул ошибку
-            answer = f"Ошибка от DeepSeek API: {response.status_code} - {response.text[:200]}"
-    
+            answer = f"Ошибка API: {response.status_code}"
+            
     except requests.exceptions.Timeout:
         answer = "DeepSeek не успел ответить. Попробуй спросить короче."
     except Exception as e:
-        answer = f"Ошибка: {str(e)[:200]}"
+        answer = f"Ошибка: {str(e)}"
     
     return {
         "version": "1.0",
