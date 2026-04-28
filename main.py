@@ -11,7 +11,7 @@ DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 async def main(request: Request):
     body = await request.json()
     user_text = body["request"]["original_utterance"]
-
+    
     response = requests.post(
         DEEPSEEK_API_URL,
         headers={"Authorization": f"Bearer {DEEPSEEK_API_KEY}"},
@@ -21,7 +21,7 @@ async def main(request: Request):
         }
     )
     answer = response.json()["choices"][0]["message"]["content"]
-
+    
     return {
         "version": body["version"],
         "session": body["session"],
